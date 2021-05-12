@@ -1,0 +1,19 @@
+@charset "utf-8";
+
+@media (prefers-color-scheme: light) {
+    // TODO
+}
+
+@media (prefers-color-scheme: dark) {
+    // TODO
+}
+
+$primary: #23B5D3;
+$body-background-color: #9dbdca;
+
+$fa-font-path: "./webfonts";
+
+@import "./style.scss";
+@import "../../node_modules/bulma/bulma.sass";
+@import "./scss/fontawesome.scss";
+@import "./scss/solid.scss";

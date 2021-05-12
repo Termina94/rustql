@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "rustql-yew",
+    "rustql-api",
+    "rustql-types"
+]

@@ -1,0 +1,4 @@
+[tasks.dev]
+env = { RUST_LOG = "debug"}
+command = "cargo"
+args = ["watch", "-s", "cargo run"]
