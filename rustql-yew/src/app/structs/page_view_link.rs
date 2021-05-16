@@ -1,10 +1,10 @@
+use crate::app::components::page_view::PageView;
 use std::{cell::RefCell, rc::Rc};
 use yew::{Component, ComponentLink};
-use crate::app::components::page_view::PageView;
 
 #[derive(Debug, Default, Clone)]
 pub struct PageViewLink<T: Component> {
-    pub link: Rc<RefCell<Option<ComponentLink<T>>>>
+    pub link: Rc<RefCell<Option<ComponentLink<T>>>>,
 }
 
 impl PageViewLink<PageView> {

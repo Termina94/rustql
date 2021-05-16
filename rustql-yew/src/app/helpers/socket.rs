@@ -1,12 +1,12 @@
 use anyhow::Error;
-use rustql_types::{ApiAction};
+use rustql_types::{ApiAction, ApiRequest};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use yew::{
     format::Json,
     services::{
         websocket::{WebSocketStatus, WebSocketTask},
-        WebSocketService,
+        ConsoleService, WebSocketService,
     },
     Callback, Component, ComponentLink,
 };
@@ -38,10 +38,33 @@ pub trait Socket<T: Component> {
         }
     }
 
-    fn s_send(socket: &mut Option<WebSocketTask>, action: ApiAction) -> bool {
+    fn s_send(socket: &mut Option<WebSocketTask>, request: ApiRequest) -> bool {
+        let request_string = serde_json::to_string(&request).expect("Failed to build request");
+
         match socket {
             Some(ref mut socket) => {
-                socket.send(Ok(action.to_string()));
+                socket.send(Ok(request_string));
+                true
+            }
+            None => false,
+        }
+    }
+
+    fn s_send_data<M: Serialize>(
+        socket: &mut Option<WebSocketTask>,
+        action: ApiAction,
+        data: M,
+    ) -> bool {
+        let request = ApiRequest {
+            action: action.to_string(),
+            data: Some(serde_json::to_string(&data).expect("Failed to serialize request data")),
+        };
+
+        let request_string = serde_json::to_string(&request).expect("Failed to build request");
+
+        match socket {
+            Some(ref mut socket) => {
+                socket.send(Ok(request_string));
                 true
             }
             None => false,
@@ -52,7 +75,9 @@ pub trait Socket<T: Component> {
         link.callback(|Json(msg): Json<Result<ApiResponse, Error>>| match msg {
             Ok(response) => match ApiAction::from_str(&response.action) {
                 Ok(action) => Self::on_message(action, response.data.unwrap_or_default()),
-                Err(_) => Self::on_message(ApiAction::Error, format!("{} not found", response.action)),
+                Err(_) => {
+                    Self::on_message(ApiAction::Error, format!("{} not found", response.action))
+                }
             },
             Err(err) => Self::on_message(ApiAction::Error, err.to_string()),
         })

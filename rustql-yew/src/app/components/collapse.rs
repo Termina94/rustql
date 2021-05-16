@@ -41,7 +41,7 @@ impl Component for Collapse {
                 self.props = props;
                 true
             }
-            true => false
+            true => false,
         }
     }
 
@@ -63,7 +63,7 @@ impl Component for Collapse {
                 </div>
                 {self.view_draw()}
             </div>
-            
+
         }
     }
 }

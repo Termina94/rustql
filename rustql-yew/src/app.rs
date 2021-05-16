@@ -1,20 +1,23 @@
+use self::{components::page_view::PageViewMsg, store::AppStore};
+use components::page_view::PageView;
 use components::{db_collapse::DBCollapse, navbar::Navbar};
 use helpers::socket::Socket;
 use helpers::socket::SocketMessage;
-use rustql_types::{ApiAction, Database, TableFields};
+use rustql_types::{ApiAction, ApiRequest, Database, TableData, TableFields};
 use serde_json;
 use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, rc::Rc};
-use yew::{services::{ConsoleService, websocket::WebSocketTask}};
 use structs::page_view_link::PageViewLink;
-use yew::{prelude::*};
-use components::page_view::{PageView};
-use self::{components::page_view::PageViewMsg, store::AppStore};
+use yew::prelude::*;
+use yew::{
+    format::Json,
+    services::{websocket::WebSocketTask, ConsoleService},
+};
 
 mod components;
 mod helpers;
-mod structs;
 mod pages;
 mod store;
+mod structs;
 
 pub struct App {
     link: ComponentLink<Self>,
@@ -22,6 +25,7 @@ pub struct App {
     state: State,
     store: Rc<RefCell<AppStore>>,
     page_link: PageViewLink<PageView>,
+    menu_open: bool,
 }
 
 pub enum State {
@@ -33,12 +37,12 @@ pub enum State {
 
 pub enum Msg {
     LoadDatabases(Result<Vec<Database>, serde_json::Error>),
-    UpdateTableData(TableFields),
+    UpdateTableData(TableData),
     Ignore,
     SocketInit,
     ResetSocket,
     SocketClosed,
-    SocketSend(ApiAction),
+    SocketSend(ApiRequest),
     SocketError(String),
     TableSelected((usize, usize)),
 }
@@ -49,11 +53,9 @@ impl Socket<App> for App {
             ApiAction::LoadTables => Msg::LoadDatabases(serde_json::from_str(&data)),
             ApiAction::Error => Msg::SocketError(data),
             ApiAction::Init => Msg::SocketInit,
-            ApiAction::LoadTable => {
-                match serde_json::from_str(&data) {
-                    Ok(value) => Msg::UpdateTableData(value),
-                    Err(err) => Msg::SocketError(err.to_string()),
-                }
+            ApiAction::LoadTable => match serde_json::from_str(&data) {
+                Ok(value) => Msg::UpdateTableData(value),
+                Err(err) => Msg::SocketError(err.to_string()),
             },
             _ => Msg::Ignore,
         }
@@ -78,18 +80,19 @@ impl Component for App {
             socket: Self::create_socket(link),
             store: Rc::new(RefCell::new(AppStore::new())),
             page_link: PageViewLink::new(),
+            menu_open: true,
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::SocketInit => {
-                Self::s_send(&mut self.socket, ApiAction::LoadTables);
+                Self::s_send(&mut self.socket, ApiRequest::create(ApiAction::LoadTables));
                 self.state = State::Loaded;
                 true
             }
-            Msg::SocketSend(action) => {
-                Self::s_send(&mut self.socket, action);
+            Msg::SocketSend(request) => {
+                Self::s_send(&mut self.socket, request);
                 false
             }
             Msg::SocketClosed => {
@@ -116,28 +119,45 @@ impl Component for App {
                 true
             }
             Msg::LoadDatabases(Ok(dbs)) => {
-                self.store.
-                    try_borrow_mut()
+                self.store
+                    .try_borrow_mut()
                     .expect("Can't Borrow Store (Msg::LoadDatabases)")
                     .databases = dbs;
-                
+
                 true
-            },
+            }
             Msg::TableSelected((table_id, db_id)) => {
-                self.store.try_borrow_mut().expect("Can't Borrow Store (Msg::TableSelected)").selected_db = Some(self.get_db(db_id));
-                self.store.try_borrow_mut().expect("Can't Borrow Store (Msg::TableSelected)").selected_table = Some(self.get_table(db_id, table_id));
-                self.link.send_message(Msg::SocketSend(ApiAction::LoadTable));
+                self.store
+                    .try_borrow_mut()
+                    .expect("Can't Borrow Store (Msg::TableSelected)")
+                    .selected_db = Some(self.get_db(db_id));
+                self.store
+                    .try_borrow_mut()
+                    .expect("Can't Borrow Store (Msg::TableSelected)")
+                    .selected_table = Some(self.get_table(db_id, table_id));
+                self.link
+                    .send_message(Msg::SocketSend(ApiRequest::create_data(
+                        ApiAction::LoadTable,
+                        (
+                            self.store.borrow().selected_db.as_ref().unwrap(),
+                            self.store.borrow().selected_table.as_ref().unwrap(),
+                        ),
+                    )));
                 false
             }
             Msg::UpdateTableData(fields) => {
-                ConsoleService::log(&format!("{:?}", &fields));
-
-                self.store.try_borrow_mut()
+                self.store
+                    .try_borrow_mut()
                     .expect("Can't Borrow Store (Msg::UpdateTableData)")
                     .table_data = Some(fields);
-                
-                    // update page only on successful query
-                    self.page_link.link.borrow().as_ref().unwrap().send_message(PageViewMsg::Update);
+
+                // update page only on successful query
+                self.page_link
+                    .link
+                    .borrow()
+                    .as_ref()
+                    .unwrap()
+                    .send_message(PageViewMsg::Update);
                 false
             }
             _ => false,
@@ -157,14 +177,14 @@ impl Component for App {
 
                     <div class="db-collapse column p-1 fill scrollable">
                         <DBCollapse
-                            socket=self.link.callback(|action| Msg::SocketSend(action))
+                            socket=self.link.callback(|action| Msg::SocketSend(ApiRequest::create(action)))
                             store=self.store.clone()
                             on_selected=self.link.callback(Msg::TableSelected)
                         />
                     </div>
 
-                    <div class="column p-1 fill">
-                        <div class="box fill">
+                    <div class="column p-1 fill hide-overflow">
+                        <div class="box fill hide-overflow">
                             {self.view_page()}
                         </div>
                     </div>

@@ -4,8 +4,7 @@ use crate::app::App;
 
 impl App {
     pub fn get_table(&self, db_id: usize, table_id: usize) -> String {
-        self
-            .store
+        self.store
             .try_borrow()
             .expect("Cannot Access Store")
             .databases
@@ -18,8 +17,7 @@ impl App {
     }
 
     pub fn get_db(&self, db_id: usize) -> String {
-        self
-            .store
+        self.store
             .try_borrow()
             .expect("Cannot Access Store")
             .databases

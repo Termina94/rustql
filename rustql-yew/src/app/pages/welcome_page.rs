@@ -1,19 +1,17 @@
 use std::{cell::RefCell, rc::Rc};
 
-use yew::{Properties, Component, ComponentLink, html, services::ConsoleService};
-
+use yew::{html, services::ConsoleService, Component, ComponentLink, Properties};
 
 pub struct WelcomePage {
     link: ComponentLink<Self>,
-    props: WelcomePageProps
+    props: WelcomePageProps,
 }
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct WelcomePageProps {
-}
+pub struct WelcomePageProps {}
 
 pub enum Msg {
-    Debug
+    Debug,
 }
 
 impl Component for WelcomePage {
@@ -21,17 +19,12 @@ impl Component for WelcomePage {
     type Properties = WelcomePageProps;
 
     fn create(props: Self::Properties, link: yew::ComponentLink<Self>) -> Self {
-        Self {
-            link,
-            props
-        }
+        Self { link, props }
     }
 
     fn update(&mut self, msg: Self::Message) -> yew::ShouldRender {
         match msg {
-           
-            Msg::Debug => {
-            },
+            Msg::Debug => {}
         }
         true
     }

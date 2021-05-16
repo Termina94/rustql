@@ -1,11 +1,17 @@
-use yew::{Component, ComponentLink, Html, Properties, ShouldRender, html, services::ConsoleService};
+use crate::app::{
+    pages::{view_table::ViewTable, welcome_page::WelcomePage},
+    store::AppStore,
+    structs::page_view_link::PageViewLink,
+};
 use std::{cell::RefCell, rc::Rc};
-use crate::app::{pages::{view_table::ViewTable, welcome_page::WelcomePage}, store::AppStore, structs::page_view_link::PageViewLink};
+use yew::{
+    html, services::ConsoleService, Component, ComponentLink, Html, Properties, ShouldRender,
+};
 
 #[derive(Clone)]
 pub struct PageView {
     link: ComponentLink<Self>,
-    props: PageViewProps
+    props: PageViewProps,
 }
 
 #[derive(Clone, PartialEq, Properties)]
@@ -16,7 +22,7 @@ pub struct PageViewProps {
 }
 
 pub enum PageViewMsg {
-    Update
+    Update,
 }
 
 impl Component for PageView {
@@ -25,11 +31,8 @@ impl Component for PageView {
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         *props.page_link.link.borrow_mut() = Some(link.clone());
-        
-        Self {
-            link,
-            props
-        }
+
+        Self { link, props }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
@@ -39,24 +42,22 @@ impl Component for PageView {
     }
 
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
-
         match self.props == props {
             false => {
                 self.props = props;
                 true
             }
-            true => false
+            true => false,
         }
     }
 
     fn view(&self) -> Html {
-
         let db_selected = self.props.store.borrow().selected_db.is_some();
         let table_selected = self.props.store.borrow().selected_table.is_some();
 
         if table_selected && db_selected {
             html! {
-                <ViewTable 
+                <ViewTable
                     store=self.props.store.clone()
                 />
             }
@@ -65,6 +66,5 @@ impl Component for PageView {
                 <WelcomePage />
             }
         }
-        
     }
 }

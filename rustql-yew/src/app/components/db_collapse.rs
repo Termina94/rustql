@@ -3,7 +3,7 @@ use crate::app::store::AppStore;
 use super::collapse::Collapse;
 use rustql_types::{ApiAction, Database};
 use std::{cell::RefCell, rc::Rc, usize};
-use yew::{Properties, prelude::*, virtual_dom::VNode};
+use yew::{prelude::*, virtual_dom::VNode, Properties};
 
 pub struct DBCollapse {
     link: ComponentLink<Self>,
@@ -55,7 +55,7 @@ impl Component for DBCollapse {
                 self.props = props;
                 true
             }
-            true => false
+            true => false,
         }
     }
 
@@ -100,7 +100,9 @@ impl DBCollapse {
     }
 
     fn view_all_database_list(&self) -> Html {
-        self.props.store.borrow()
+        self.props
+            .store
+            .borrow()
             .databases
             .iter()
             .enumerate()
@@ -117,7 +119,11 @@ impl DBCollapse {
     }
 
     fn view_search_list(&self) -> Html {
-        let dbs = self.props.store.borrow().databases
+        let dbs = self
+            .props
+            .store
+            .borrow()
+            .databases
             .iter()
             .enumerate()
             .map(|(db_id, db)| {

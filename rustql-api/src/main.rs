@@ -1,6 +1,6 @@
 use controllers::mysql::{self, send_event, send_json};
 use log::debug;
-use rustql_types::{ApiAction};
+use rustql_types::{ApiAction, ApiRequest};
 use std::net::TcpListener;
 use tungstenite::Message;
 
@@ -33,14 +33,17 @@ fn create_websocket_listener() {
             loop {
                 let msg = websocket.read_message().unwrap();
 
-                debug!("The message is: {}", msg);
-
                 if msg.is_text() && !msg.is_empty() {
-                    let response = mysql::run_action(msg.to_string());
+                    match serde_json::from_str::<ApiRequest>(&msg.to_string()) {
+                        Ok(request) => {
+                            let response = mysql::run_action(request);
 
-                    websocket
-                        .write_message(Message::Text(response.await))
-                        .unwrap();
+                            websocket
+                                .write_message(Message::Text(response.await))
+                                .unwrap();
+                        }
+                        Err(err) => debug!("{}", err.to_string()),
+                    }
                 }
             }
         });

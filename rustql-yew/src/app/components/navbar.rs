@@ -8,11 +8,11 @@ pub struct Navbar {
 #[derive(Clone, PartialEq, Properties)]
 pub struct DropDownProps {
     #[prop_or_default]
-    pub open: bool
+    pub open: bool,
 }
 
 pub enum Msg {
-    ToggleDraw
+    ToggleDraw,
 }
 
 impl Component for Navbar {
@@ -21,10 +21,7 @@ impl Component for Navbar {
     type Properties = DropDownProps;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Self {
-            link,
-            props
-        }
+        Self { link, props }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
@@ -40,7 +37,7 @@ impl Component for Navbar {
                 self.props = props;
                 true
             }
-            true => false
+            true => false,
         }
     }
 
@@ -49,11 +46,11 @@ impl Component for Navbar {
             <div class="navbar" role="navigation" aria-label="main navigation">
                 <div class="navbar-menu">
                     <div class="navbar-start">
-                        <a href="/" class="navbar-item">
+                        <a role="button" class="navbar-item">
                             {String::from("Home")}
                         </a>
                     </div>
-                </div>                
+                </div>
             </div>
         }
     }
