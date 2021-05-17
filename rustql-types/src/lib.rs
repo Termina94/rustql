@@ -58,11 +58,12 @@ pub struct TableData {
     pub count: usize,
 }
 
-pub type TableFields = HashMap<String, TableField>;
+pub type TableFields = Vec<TableField>;
 
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TableField {
-    pub field_type: String,
+    pub name: String,
+    pub sql_type: String,
     pub values: Vec<String>,
 }
 

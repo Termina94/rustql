@@ -1,7 +1,7 @@
 use crate::helpers::api_types::{self, table_fields_from};
 use log::debug;
 use mysql::{prelude::Queryable, Error, Pool, Row};
-use rustql_types::{ApiAction, ApiRequest, ApiResponse, Database, TableData, TableFields};
+use rustql_types::{ApiAction, ApiRequest, ApiResponse, Database, TableData};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -93,8 +93,6 @@ pub async fn load_table(request: ApiRequest) -> Result<String, Error> {
     let mut conn = pool.get_conn()?;
     let query = format!("SELECT * FROM {}.{} Limit 20", &db, &table);
     let results = conn.query(query)?;
-
-    debug!("RESULT {:?}", &results);
 
     let response = TableData {
         db_name: db,

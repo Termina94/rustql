@@ -93,9 +93,9 @@ impl ViewTable {
             Some(data) => {
                 let titles: Html = data
                     .table_fields
-                    .keys()
-                    .map(|title| {
-                        html! { <th class="is-size-6">{title}</th> }
+                    .iter()
+                    .map(|field| {
+                        html! { <th class="is-size-6">{&field.name }</th> }
                     })
                     .collect();
 
@@ -104,7 +104,7 @@ impl ViewTable {
                         let rows = data
                             .table_fields
                             .iter()
-                            .map(|(_, field)| {
+                            .map(|field| {
                                 let value: &String = field.values.get(i).unwrap();
 
                                 html! { <td class="is-size-7">{value}</td> }
