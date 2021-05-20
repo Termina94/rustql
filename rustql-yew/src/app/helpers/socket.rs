@@ -6,7 +6,7 @@ use yew::{
     format::Json,
     services::{
         websocket::{WebSocketStatus, WebSocketTask},
-        ConsoleService, WebSocketService,
+        WebSocketService,
     },
     Callback, Component, ComponentLink,
 };

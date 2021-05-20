@@ -1,12 +1,26 @@
-use rustql_types::TableField;
 use std::{cell::RefCell, rc::Rc};
-use yew::{html, services::ConsoleService, Component, ComponentLink, Html, Properties};
+use rustql_types::{ApiAction, ApiRequest};
+use yew::{Callback, Component, ComponentLink, DragEvent, Html, InputData, InputEvent, KeyboardEvent, MouseEvent, NodeRef, Properties, classes, html, services::{ConsoleService, websocket::WebSocketTask}, web_sys::HtmlElement};
 
-use crate::app::store::AppStore;
+use crate::app::{components::query_editor::{QueryEditor, QueryEditorMsg}, helpers::socket::Socket, store::AppStore, structs::page_view_link::CustomLink};
 
 pub struct ViewTable {
     link: ComponentLink<Self>,
+    editor_link: CustomLink<QueryEditor>,
     props: WelcomePageProps,
+    query: String,
+    query_box_open: bool,
+    dragging: bool,
+    query_box_height: i32,
+    start_position: (i32, i32),
+    splitter: NodeRef,
+
+    // Event listeners
+
+    drag: Callback<MouseEvent>,
+    dragging_false: Callback<MouseEvent>,
+    dragging_true: Callback<MouseEvent>,
+    toggle_query_box_open: Callback<MouseEvent>,
 }
 
 #[derive(Clone, PartialEq, Properties, Debug)]
@@ -16,7 +30,9 @@ pub struct WelcomePageProps {
 }
 
 pub enum Msg {
-    Debug,
+    ToggleQueryBoxOpen,
+    SetDragging(MouseEvent, bool),
+    Drag(MouseEvent),
 }
 
 impl Component for ViewTable {
@@ -24,14 +40,55 @@ impl Component for ViewTable {
     type Properties = WelcomePageProps;
 
     fn create(props: Self::Properties, link: yew::ComponentLink<Self>) -> Self {
-        Self { link, props }
+
+        let drag = link.callback(|drag| Msg::Drag(drag));
+        let dragging_true = link.callback(|e| Msg::SetDragging(e, true));
+        let dragging_false = link.callback(|e| Msg::SetDragging(e, false));
+        let toggle_query_box_open = link.callback(|_| Msg::ToggleQueryBoxOpen);
+
+        Self {
+            link,
+            editor_link: CustomLink::new(),
+            props,
+            query: String::from("select * from information_schema.COLLATION_CHARACTER_SET_APPLICABILITY"),
+            query_box_open: false,
+            dragging: false,
+            start_position: (0,0),
+            query_box_height: 100,
+            splitter: NodeRef::default(),
+            // event listeners
+            drag,
+            dragging_false,
+            dragging_true,
+            toggle_query_box_open,
+        }
     }
 
     fn update(&mut self, msg: Self::Message) -> yew::ShouldRender {
         match msg {
-            Msg::Debug => {}
+            Msg::ToggleQueryBoxOpen => { 
+                self.query_box_open = !self.query_box_open;
+                self.editor_link.send_message(QueryEditorMsg::Update(self.query_box_height));
+                true
+            },
+            Msg::SetDragging(event, value) => {
+                match value {
+                    true => self.start_position = (event.screen_x(), event.screen_y()),
+                    false => {}
+                };
+                self.dragging = value;
+                false
+            },
+            Msg::Drag(event) => {
+                if self.dragging {
+                    self.query_box_height -= event.screen_y() - self.start_position.1;
+                    self.start_position = (event.screen_x(), event.screen_y());
+
+                    self.editor_link.send_message(QueryEditorMsg::Update(self.query_box_height));
+                }
+                false
+            },
         }
-        true
     }
 
     fn change(&mut self, props: Self::Properties) -> yew::ShouldRender {
@@ -50,44 +107,60 @@ impl Component for ViewTable {
     }
 
     fn view(&self) -> yew::Html {
+        html! {
+            <>
+                <div 
+                    class="rows rows-fill"
+                    onmousemove=&self.drag
+                    onmouseup=&self.dragging_false
+                >
+                    {self.view_rows()}
+                </div>
+                
+            </>
+        }
+    }
+}
+
+impl ViewTable {
+    fn view_rows(&self) -> Html {
         if let (Some(db), Some(table)) = (
             &self.props.store.borrow().selected_db,
             &self.props.store.borrow().selected_table,
         ) {
             html! {
                 <>
-                    <div class="rows rows-fill">
-                        <div class="row">
-                            <span class="icon-text">
-                                <span class="icon">
-                                    <i class="fas fa-database"/>
+                    <div class="row">
+                        <div class="columns">
+                            <div class="column">
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="fas fa-database"/>
+                                    </span>
+                                    <span><b>{db}</b></span>
                                 </span>
-                                <span><b>{db}</b></span>
-                            </span>
-                            <br/>
-                            <span class="icon-text">
-                                <span class="icon">
-                                    <i class="fas fa-table"/>
+                                <br/>
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <i class="fas fa-table"/>
+                                    </span>
+                                    <span>{table}</span>
                                 </span>
-                                <span>{table}</span>
-                            </span>
-                        </div>
-                        <div class="row mt-2 fill hide-overflow">
-                            {self.view_table()}
+                            </div>
+                            <div class="column">
+                                {self.view_toolbar()}
+                            </div>
                         </div>
                     </div>
+                    <div class="row view-table mt-2 fill hide-overflow">
+                        {self.view_table()}
+                    </div>
+                    {self.view_query_box()}
                 </>
             }
-        } else {
-            html! {
-                <>
-                </>
-            }
-        }
+        } else { Html::default() }
     }
-}
 
-impl ViewTable {
     fn view_table(&self) -> Html {
         match &self.props.store.borrow().table_data {
             Some(data) => {
@@ -134,7 +207,53 @@ impl ViewTable {
                     </div>
                 }
             }
-            None => html! {},
+            None => Html::default(),
+        }
+    }
+
+    fn view_toolbar(&self) -> Html {
+        html! {
+            <div class="columns is-mobile">
+                <div class="column is-narrow">
+                    <button onclick=&self.toggle_query_box_open
+                        class=classes!("button", self.query_box_open.then(||"is-info"))
+                    >
+                        <i class="is-medium fas fa-edit"/>
+                    </button>
+                </div>
+                <div class="column is-narrow">
+                    <button class="button">
+                        <i class="is-medium fas fa-search"/>
+                    </button>
+                </div>
+                <div class="column is-narrow">
+                    <button class="button">
+                        <i class="is-medium fas fa-table"/>
+                    </button>
+                </div>
+            </div>
+        }
+    }
+
+    fn view_query_box(&self) -> Html {
+        match self.query_box_open {
+            true => html! {
+                <>
+                    <div class="row noselect">
+                        <div
+                            class="split-dragger noselect"
+                            ref=self.splitter.clone()
+                            onmousedown=&self.dragging_true
+                        />
+                    </div>
+                    <QueryEditor
+                        store=self.props.store.clone()
+                        height=self.query_box_height
+                        editor_link=self.editor_link.clone()
+                    />
+                </>
+            },
+            false => Html::default()
         }
     }
 }

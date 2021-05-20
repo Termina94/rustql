@@ -1,7 +1,7 @@
 use crate::app::store::AppStore;
 
 use super::collapse::Collapse;
-use rustql_types::{ApiAction, Database};
+use rustql_types::{ApiAction};
 use std::{cell::RefCell, rc::Rc, usize};
 use yew::{prelude::*, virtual_dom::VNode, Properties};
 
@@ -18,9 +18,7 @@ pub enum DBCollapseMsg {
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct DBCollapseProps {
-    #[prop_or_default]
     pub store: Rc<RefCell<AppStore>>,
-    pub socket: Callback<ApiAction>,
     pub on_selected: Callback<(usize, usize)>,
 }
 
@@ -67,7 +65,7 @@ impl Component for DBCollapse {
                         <input
                             class="input is-primary" type="text"
                             placeholder="Search"
-                            value=self.search_field
+                            value=self.search_field.clone()
                             oninput=self.link.callback(|search| DBCollapseMsg::UpdateSearch(search))
                         />
                         <span class="icon is-left">
@@ -140,7 +138,7 @@ impl DBCollapse {
 
                 if tables.len() > 0 {
                     html! {
-                        <Collapse open=true title=&db.name>
+                        <Collapse open=true title=db.name.clone()>
                             { for tables.iter().map(|(table_id, table)| {
                                 self.view_table_selector(table, *table_id, db_id)
                             })}

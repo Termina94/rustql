@@ -1,6 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
-
-use yew::{html, services::ConsoleService, Component, ComponentLink, Properties};
+use yew::{html, Component, ComponentLink, Properties};
 
 pub struct WelcomePage {
     link: ComponentLink<Self>,

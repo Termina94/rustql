@@ -1,11 +1,11 @@
 use crate::app::{
     pages::{view_table::ViewTable, welcome_page::WelcomePage},
     store::AppStore,
-    structs::page_view_link::PageViewLink,
+    structs::page_view_link::CustomLink,
 };
 use std::{cell::RefCell, rc::Rc};
 use yew::{
-    html, services::ConsoleService, Component, ComponentLink, Html, Properties, ShouldRender,
+    html, Component, ComponentLink, Html, Properties, ShouldRender,
 };
 
 #[derive(Clone)]
@@ -18,7 +18,7 @@ pub struct PageView {
 pub struct PageViewProps {
     #[prop_or_default]
     pub store: Rc<RefCell<AppStore>>,
-    pub page_link: PageViewLink<PageView>,
+    pub page_link: CustomLink<PageView>,
 }
 
 pub enum PageViewMsg {

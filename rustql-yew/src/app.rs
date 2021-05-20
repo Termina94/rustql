@@ -3,14 +3,13 @@ use components::page_view::PageView;
 use components::{db_collapse::DBCollapse, navbar::Navbar};
 use helpers::socket::Socket;
 use helpers::socket::SocketMessage;
-use rustql_types::{ApiAction, ApiRequest, Database, TableData, TableFields};
+use rustql_types::{ApiAction, ApiRequest, Database, TableData};
 use serde_json;
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, rc::Rc};
-use structs::page_view_link::PageViewLink;
+use std::{cell::RefCell, rc::Rc};
+use structs::page_view_link::CustomLink;
 use yew::prelude::*;
 use yew::{
-    format::Json,
-    services::{websocket::WebSocketTask, ConsoleService},
+    services::{websocket::WebSocketTask},
 };
 
 mod components;
@@ -24,8 +23,7 @@ pub struct App {
     socket: Option<WebSocketTask>,
     state: State,
     store: Rc<RefCell<AppStore>>,
-    page_link: PageViewLink<PageView>,
-    menu_open: bool,
+    page_link: CustomLink<PageView>,
 }
 
 pub enum State {
@@ -74,13 +72,16 @@ impl Component for App {
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+
+        let store = Rc::new(RefCell::new(AppStore::new()));
+        store.borrow_mut().set_socket_link(link.clone());
+
         App {
             link: link.clone(),
             state: State::Loaded,
-            socket: Self::create_socket(link),
-            store: Rc::new(RefCell::new(AppStore::new())),
-            page_link: PageViewLink::new(),
-            menu_open: true,
+            socket: Self::create_socket(link.clone()),
+            store,
+            page_link: CustomLink::new(),
         }
     }
 
@@ -177,7 +178,6 @@ impl Component for App {
 
                     <div class="db-collapse column p-1 fill scrollable">
                         <DBCollapse
-                            socket=self.link.callback(|action| Msg::SocketSend(ApiRequest::create(action)))
                             store=self.store.clone()
                             on_selected=self.link.callback(Msg::TableSelected)
                         />
