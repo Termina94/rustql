@@ -4,9 +4,7 @@ use crate::app::{
     structs::page_view_link::CustomLink,
 };
 use std::{cell::RefCell, rc::Rc};
-use yew::{
-    html, Component, ComponentLink, Html, Properties, ShouldRender,
-};
+use yew::{html, Component, ComponentLink, Html, Properties, ShouldRender};
 
 #[derive(Clone)]
 pub struct PageView {

@@ -8,9 +8,7 @@ use serde_json;
 use std::{cell::RefCell, rc::Rc};
 use structs::page_view_link::CustomLink;
 use yew::prelude::*;
-use yew::{
-    services::{websocket::WebSocketTask},
-};
+use yew::services::websocket::WebSocketTask;
 
 mod components;
 mod helpers;
@@ -72,7 +70,6 @@ impl Component for App {
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
-
         let store = Rc::new(RefCell::new(AppStore::new()));
         store.borrow_mut().set_socket_link(link.clone());
 

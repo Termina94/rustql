@@ -1,7 +1,7 @@
 use crate::app::store::AppStore;
 
 use super::collapse::Collapse;
-use rustql_types::{ApiAction};
+use rustql_types::ApiAction;
 use std::{cell::RefCell, rc::Rc, usize};
 use yew::{prelude::*, virtual_dom::VNode, Properties};
 

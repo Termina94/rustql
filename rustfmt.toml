@@ -1,5 +1,0 @@
-brace_style = "SameLineWhere"
-condense_wildcard_suffixes = true
-control_brace_style = "AlwaysSameLine"
-empty_item_single_line = true
-error_on_unformatted = true

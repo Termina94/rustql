@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
-use crate::helpers::api_types::{table_fields_from};
+use crate::helpers::api_types::table_fields_from;
 use log::debug;
 use mysql::{prelude::Queryable, Error, Pool};
 use rustql_types::{ApiAction, ApiRequest, ApiResponse, Database, TableData};
-use serde::{Serialize};
+use serde::Serialize;
 
 // static URL: &str = "mysql://node_user:ydKlroqpPUnAKSjA@192.168.1.105:3306";
 static URL: &str = "mysql://root:rustqlpw@localhost:3306";

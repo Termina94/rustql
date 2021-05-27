@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 use rustql_types::{ApiAction, ApiRequest};
-use yew::{Callback, Component, ComponentLink, DragEvent, Html, InputData, InputEvent, KeyboardEvent, MouseEvent, NodeRef, Properties, classes, html, services::{ConsoleService, websocket::WebSocketTask}, web_sys::HtmlElement};
+use yew::{Callback, Classes, Component, ComponentLink, DragEvent, Html, InputData, InputEvent, KeyboardEvent, MouseEvent, NodeRef, Properties, classes, html, services::{ConsoleService, websocket::WebSocketTask}, web_sys::HtmlElement};
 
 use crate::app::{components::query_editor::{QueryEditor, QueryEditorMsg}, helpers::socket::Socket, store::AppStore, structs::page_view_link::CustomLink};
 
@@ -33,6 +33,7 @@ pub enum Msg {
     ToggleQueryBoxOpen,
     SetDragging(MouseEvent, bool),
     Drag(MouseEvent),
+    AppendToQuery(String),
 }
 
 impl Component for ViewTable {
@@ -50,7 +51,7 @@ impl Component for ViewTable {
             link,
             editor_link: CustomLink::new(),
             props,
-            query: String::from("select * from information_schema.COLLATION_CHARACTER_SET_APPLICABILITY"),
+            query: String::new(),
             query_box_open: false,
             dragging: false,
             start_position: (0,0),
@@ -66,6 +67,10 @@ impl Component for ViewTable {
 
     fn update(&mut self, msg: Self::Message) -> yew::ShouldRender {
         match msg {
+            Msg::AppendToQuery(text) => {
+                self.editor_link.send_message(QueryEditorMsg::AppendText(text.to_string(), None, None));
+                false
+            },
             Msg::ToggleQueryBoxOpen => { 
                 self.query_box_open = !self.query_box_open;
                 self.editor_link.send_message(QueryEditorMsg::Update(self.query_box_height));
@@ -74,7 +79,9 @@ impl Component for ViewTable {
             Msg::SetDragging(event, value) => {
                 match value {
                     true => self.start_position = (event.screen_x(), event.screen_y()),
-                    false => {}
+                    false => {
+                        
+                    }
                 };
                 self.dragging = value;
                 false
@@ -92,42 +99,39 @@ impl Component for ViewTable {
     }
 
     fn change(&mut self, props: Self::Properties) -> yew::ShouldRender {
-        // Manually check until partialEq is implemented for store
-        let table_change =
-            self.props.store.borrow().selected_table == props.store.borrow().selected_table;
-        let db_change = self.props.store.borrow().selected_db == props.store.borrow().selected_db;
-
         match self.props == props {
             false => {
                 self.props = props;
                 true
             }
-            true => table_change || db_change,
+            true => true,
         }
     }
 
     fn view(&self) -> yew::Html {
         html! {
-            <>
-                <div 
-                    class="rows rows-fill"
-                    onmousemove=&self.drag
-                    onmouseup=&self.dragging_false
-                >
-                    {self.view_rows()}
-                </div>
+            <div 
+                class="rows rows-fill"
+                onmousemove=&self.drag
+                onmouseup=&self.dragging_false
+            >
+                {self.view_rows()}
+            </div>
                 
-            </>
         }
     }
 }
 
 impl ViewTable {
     fn view_rows(&self) -> Html {
-        if let (Some(db), Some(table)) = (
-            &self.props.store.borrow().selected_db,
-            &self.props.store.borrow().selected_table,
-        ) {
+
+        let db = self.props.store.borrow().get_db();
+        let table = self.props.store.borrow().get_table();
+
+        let append_db = self.link.callback(move |_| Msg::AppendToQuery(db.clone().unwrap()));
+        let append_table = self.link.callback(move |_| Msg::AppendToQuery(table.clone().unwrap()));
+
+        if true {
             html! {
                 <>
                     <div class="row">
@@ -137,14 +141,14 @@ impl ViewTable {
                                     <span class="icon">
                                         <i class="fas fa-database"/>
                                     </span>
-                                    <span><b>{db}</b></span>
+                                    <span onclick=append_db><b>{self.props.store.borrow().get_db().unwrap()}</b></span>
                                 </span>
                                 <br/>
                                 <span class="icon-text">
                                     <span class="icon">
                                         <i class="fas fa-table"/>
                                     </span>
-                                    <span>{table}</span>
+                                    <span onclick=append_table>{self.props.store.borrow().get_table().unwrap()}</span>
                                 </span>
                             </div>
                             <div class="column">
@@ -236,24 +240,24 @@ impl ViewTable {
     }
 
     fn view_query_box(&self) -> Html {
-        match self.query_box_open {
-            true => html! {
-                <>
-                    <div class="row noselect">
-                        <div
-                            class="split-dragger noselect"
-                            ref=self.splitter.clone()
-                            onmousedown=&self.dragging_true
-                        />
-                    </div>
-                    <QueryEditor
-                        store=self.props.store.clone()
-                        height=self.query_box_height
-                        editor_link=self.editor_link.clone()
+        let hide = !self.query_box_open;
+
+        html! {
+            <>
+                <div class=classes!("row", "noselect", hide.then(||"no-display"))>
+                    <div
+                        class="split-dragger noselect"
+                        ref=self.splitter.clone()
+                        onmousedown=&self.dragging_true
                     />
-                </>
-            },
-            false => Html::default()
+                </div>
+                <QueryEditor
+                    hide=hide
+                    store=self.props.store.clone()
+                    height=self.query_box_height
+                    editor_link=self.editor_link.clone()
+                />
+            </>
         }
     }
 }
