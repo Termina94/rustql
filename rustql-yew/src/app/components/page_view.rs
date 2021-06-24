@@ -1,8 +1,4 @@
-use crate::app::{
-    pages::{view_table::ViewTable, welcome_page::WelcomePage},
-    store::AppStore,
-    structs::page_view_link::CustomLink,
-};
+use crate::app::{pages::{view_table::{ViewTable}, welcome_page::WelcomePage}, store::AppStore, structs::page_view_link::CustomLink};
 use std::{cell::RefCell, rc::Rc};
 use yew::{html, Component, ComponentLink, Html, Properties, ShouldRender};
 
@@ -35,7 +31,7 @@ impl Component for PageView {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            PageViewMsg::Update => true,
+            PageViewMsg::Update => true
         }
     }
 

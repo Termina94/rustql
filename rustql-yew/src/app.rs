@@ -84,7 +84,7 @@ impl Component for App {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::SocketInit => {
+			Msg::SocketInit => {
                 Self::s_send(&mut self.socket, ApiRequest::create(ApiAction::LoadTables));
                 self.state = State::Loaded;
                 true

@@ -12,6 +12,7 @@ pub struct DBCollapse {
 }
 
 pub enum DBCollapseMsg {
+    PreventDefault(MouseEvent),
     UpdateSearch(InputData),
     ClearSearch,
 }
@@ -36,6 +37,10 @@ impl Component for DBCollapse {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
+            DBCollapseMsg::PreventDefault(event) => {
+                event.prevent_default();
+                false
+            },
             DBCollapseMsg::UpdateSearch(search) => {
                 self.search_field = search.value;
                 true
@@ -157,7 +162,12 @@ impl DBCollapse {
         html! {
             <a
                 class="panel-block"
-                onclick=self.props.on_selected.reform(move|_| (table_id, db_id))
+                onmousedown=self.link.callback(DBCollapseMsg::PreventDefault)
+                onmouseup=self.link.callback(DBCollapseMsg::PreventDefault)
+                onclick=self.props.on_selected.reform(move|event: MouseEvent| {
+                    event.prevent_default();
+                    (table_id, db_id)
+                })
             >
                 {table_name}
             </a>

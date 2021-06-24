@@ -1,14 +1,13 @@
 use std::{cell::RefCell, rc::Rc};
-use rustql_types::{ApiAction, ApiRequest};
-use yew::{Callback, Classes, Component, ComponentLink, DragEvent, Html, InputData, InputEvent, KeyboardEvent, MouseEvent, NodeRef, Properties, classes, html, services::{ConsoleService, websocket::WebSocketTask}, web_sys::HtmlElement};
+use yew::{Callback, Component, ComponentLink, Html, MouseEvent, NodeRef, Properties, classes, html};
 
-use crate::app::{components::query_editor::{QueryEditor, QueryEditorMsg}, helpers::socket::Socket, store::AppStore, structs::page_view_link::CustomLink};
+use crate::app::{components::query_editor::{QueryEditor, QueryEditorMsg}, store::AppStore, structs::page_view_link::CustomLink};
 
+#[derive(Clone)]
 pub struct ViewTable {
     link: ComponentLink<Self>,
     editor_link: CustomLink<QueryEditor>,
     props: WelcomePageProps,
-    query: String,
     query_box_open: bool,
     dragging: bool,
     query_box_height: i32,
@@ -23,13 +22,14 @@ pub struct ViewTable {
     toggle_query_box_open: Callback<MouseEvent>,
 }
 
-#[derive(Clone, PartialEq, Properties, Debug)]
+#[derive(Clone, PartialEq, Properties)]
 pub struct WelcomePageProps {
     #[prop_or_default]
     pub store: Rc<RefCell<AppStore>>,
 }
 
-pub enum Msg {
+pub enum ViewTableMsg {
+    PreventDefault(MouseEvent),
     ToggleQueryBoxOpen,
     SetDragging(MouseEvent, bool),
     Drag(MouseEvent),
@@ -37,21 +37,20 @@ pub enum Msg {
 }
 
 impl Component for ViewTable {
-    type Message = Msg;
+    type Message = ViewTableMsg;
     type Properties = WelcomePageProps;
 
     fn create(props: Self::Properties, link: yew::ComponentLink<Self>) -> Self {
 
-        let drag = link.callback(|drag| Msg::Drag(drag));
-        let dragging_true = link.callback(|e| Msg::SetDragging(e, true));
-        let dragging_false = link.callback(|e| Msg::SetDragging(e, false));
-        let toggle_query_box_open = link.callback(|_| Msg::ToggleQueryBoxOpen);
+        let drag = link.callback(|drag| ViewTableMsg::Drag(drag));
+        let dragging_true = link.callback(|e| ViewTableMsg::SetDragging(e, true));
+        let dragging_false = link.callback(|e| ViewTableMsg::SetDragging(e, false));
+        let toggle_query_box_open = link.callback(|_| ViewTableMsg::ToggleQueryBoxOpen);
 
         Self {
             link,
             editor_link: CustomLink::new(),
             props,
-            query: String::new(),
             query_box_open: false,
             dragging: false,
             start_position: (0,0),
@@ -67,16 +66,20 @@ impl Component for ViewTable {
 
     fn update(&mut self, msg: Self::Message) -> yew::ShouldRender {
         match msg {
-            Msg::AppendToQuery(text) => {
+            ViewTableMsg::PreventDefault(event) => {
+                event.prevent_default();
+                false
+            },
+            ViewTableMsg::AppendToQuery(text) => {
                 self.editor_link.send_message(QueryEditorMsg::AppendText(text.to_string(), None, None));
                 false
             },
-            Msg::ToggleQueryBoxOpen => { 
+            ViewTableMsg::ToggleQueryBoxOpen => { 
                 self.query_box_open = !self.query_box_open;
                 self.editor_link.send_message(QueryEditorMsg::Update(self.query_box_height));
                 true
             },
-            Msg::SetDragging(event, value) => {
+            ViewTableMsg::SetDragging(event, value) => {
                 match value {
                     true => self.start_position = (event.screen_x(), event.screen_y()),
                     false => {
@@ -86,7 +89,7 @@ impl Component for ViewTable {
                 self.dragging = value;
                 false
             },
-            Msg::Drag(event) => {
+            ViewTableMsg::Drag(event) => {
                 if self.dragging {
                     self.query_box_height -= event.screen_y() - self.start_position.1;
                     self.start_position = (event.screen_x(), event.screen_y());
@@ -128,8 +131,8 @@ impl ViewTable {
         let db = self.props.store.borrow().get_db();
         let table = self.props.store.borrow().get_table();
 
-        let append_db = self.link.callback(move |_| Msg::AppendToQuery(db.clone().unwrap()));
-        let append_table = self.link.callback(move |_| Msg::AppendToQuery(table.clone().unwrap()));
+        let append_db = self.link.callback(move |_| ViewTableMsg::AppendToQuery(db.clone().unwrap()));
+        let append_table = self.link.callback(move |_| ViewTableMsg::AppendToQuery(table.clone().unwrap()));
 
         if true {
             html! {
@@ -141,14 +144,26 @@ impl ViewTable {
                                     <span class="icon">
                                         <i class="fas fa-database"/>
                                     </span>
-                                    <span onclick=append_db><b>{self.props.store.borrow().get_db().unwrap()}</b></span>
+                                    <span
+                                        onclick=append_db
+                                        onmousedown=self.link.callback(ViewTableMsg::PreventDefault)
+                                        onmouseup=self.link.callback(ViewTableMsg::PreventDefault)
+                                    >
+                                        <b>{self.props.store.borrow().get_db().unwrap()}</b>
+                                    </span>
                                 </span>
                                 <br/>
                                 <span class="icon-text">
                                     <span class="icon">
                                         <i class="fas fa-table"/>
                                     </span>
-                                    <span onclick=append_table>{self.props.store.borrow().get_table().unwrap()}</span>
+                                    <span
+                                        onclick=append_table
+                                        onmousedown=self.link.callback(ViewTableMsg::PreventDefault)
+                                        onmouseup=self.link.callback(ViewTableMsg::PreventDefault)
+                                    >
+                                        {self.props.store.borrow().get_table().unwrap()}
+                                    </span>
                                 </span>
                             </div>
                             <div class="column">
