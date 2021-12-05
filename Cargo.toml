@@ -3,5 +3,6 @@
 members = [
     "rustql-yew",
     "rustql-api",
-    "rustql-types"
+    "rustql-types",
+    "rustql-yew/src-tauri"
 ]

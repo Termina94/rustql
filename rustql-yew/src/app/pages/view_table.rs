@@ -232,7 +232,7 @@ impl ViewTable {
 
     fn view_toolbar(&self) -> Html {
         html! {
-            <div class="columns is-mobile">
+            <div class="columns is-mobile float-right">
                 <div class="column is-narrow">
                     <button onclick=&self.toggle_query_box_open
                         class=classes!("button", self.query_box_open.then(||"is-info"))
